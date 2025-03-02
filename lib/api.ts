@@ -9,7 +9,7 @@ export async function identifySong(file: File): Promise<SongResult> {
   try {
     // Create form data to send the file
     const formData = new FormData();
-    formData.append('audio', file);
+    formData.append('audio', file, file.name);
     
     // Send the file to our API route
     const response = await fetch('/api/identify', {
