@@ -5,6 +5,43 @@ import { CheckCircle, Loader2, Music, Upload, XCircle, Mic, Square } from 'lucid
 // Add to your dependencies
 // @ts-ignore
 import lamejs from 'lamejs';
+import { useDarkMode } from 'next-dark-mode';
+import { useTheme } from 'next-themes';
+
+// SongLinks component for generating music platform links
+function generateSearchLink(platform: string, songName: string, artistName: string = '') {
+  const query = encodeURIComponent(`${songName} ${artistName}`);
+
+  switch (platform) {
+      case 'gaana':
+          return `https://gaana.com/search/${encodeURIComponent(songName)}`;
+      case 'amazon':
+          return `https://music.amazon.com/search/${query}`;
+
+      default:
+          return '#';
+  }
+}
+
+function SongLinks({ songName, artistName }: { songName: string, artistName: string }) {
+  const platforms = ['gaana', 'amazon'];
+
+  return (
+      <div className="flex flex-wrap gap-3 mt-4">
+          {platforms.map(platform => (
+              <a
+                  key={platform}
+                  href={generateSearchLink(platform, songName, artistName)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className=" bg-black text-white rounded-md capitalize px-4 py-2 hover:bg-blue-700 transition-colors"
+              >
+                  Open in {platform}
+              </a>
+          ))}
+      </div>
+  );
+}
 
 export default function AudioRecognition() {
   const [file, setFile] = useState<File | null>(null);
@@ -24,6 +61,9 @@ export default function AudioRecognition() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { darkModeActive } = useDarkMode();
+  const { theme, setTheme } = useTheme();
 
   // Load lamejs from CDN as it's not directly importable in browser
   useEffect(() => {
@@ -224,7 +264,7 @@ export default function AudioRecognition() {
         {
           method: 'POST',
           headers: {
-            'x-rapidapi-key': '6d397837cdmsh54a1be6c030b593p15d4a2jsn466652ad5426',
+            'x-rapidapi-key': '2fae8c19fbmshc1c101ed553203fp180b67jsnd96198bf2fe4',
             'x-rapidapi-host': 'shazam-api-audio-recognition-for-songs-music-metadata.p.rapidapi.com',
           },
           body: formData,
@@ -247,179 +287,188 @@ export default function AudioRecognition() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Music className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Audio Recognition</h1>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* File Upload Section */}
-          <div className="flex-1">
-            <div className="border rounded-md p-4 flex flex-col items-center justify-center gap-2 border-dashed">
-              <label htmlFor="audio-upload" className="cursor-pointer flex flex-col items-center justify-center space-y-2">
-                {file && !isRecording && !audioURL ? (
-                  <div className="text-green-500 flex items-center space-x-2">
-                    <CheckCircle className="h-6 w-6"/>
-                    <p className="text-sm">File Selected: {file.name}</p>
+    <div className={`flex flex-col items-center justify-center min-h-screen py-2 ${darkModeActive ? 'dark' : ''} bg-black text-white`} style={{backgroundImage: `url('https://images.unsplash.com/photo-1477233534935-f5e6fe7c1159?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3Dg')`}}>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center gap-2">
+          <Music className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">Audio Recognition</h1>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* File Upload Section */}
+            <div className="flex-1">
+              <div className="border rounded-md p-4 flex flex-col items-center justify-center gap-2 border-dashed">
+                <label htmlFor="audio-upload" className="cursor-pointer flex flex-col items-center justify-center space-y-2">
+                  {file && !isRecording && !audioURL ? (
+                    <div className="text-green-500 flex items-center space-x-2">
+                      <CheckCircle className="h-6 w-6"/>
+                      <p className="text-sm">File Selected: {file.name}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-10 w-10 text-gray-500" />
+                      <p className="text-sm text-gray-600">
+                        Drag and drop an audio file here, or click to select a file
+                      </p>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    id="audio-upload"
+                    accept="audio/wav,audio/*" 
+                    onChange={handleFileChange} 
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+            
+            {/* Record Section */}
+            <div className="flex-1">
+              <div className="border rounded-md p-4 flex flex-col items-center justify-center gap-2">
+                <div className="text-center mb-2">
+                  <p className="font-medium">Or record audio directly</p>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  {isRecording ? (
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <Square className="h-6 w-6" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors"
+                    >
+                      <Mic className="h-6 w-6" />
+                    </button>
+                  )}
+                  
+                  <div className="text-center">
+                    {isRecording ? (
+                      <div className="flex flex-col items-center">
+                        <div className="text-red-500 font-bold animate-pulse">Recording...</div>
+                        <div>{formatTime(recordingDuration)}</div>
+                      </div>
+                    ) : audioURL ? (
+                      <div className="flex flex-col items-center">
+                        <span className="text-green-500 flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4" /> Recording saved
+                        </span>
+                        {conversionStatus && (
+                          <span className="text-blue-500 text-sm">{conversionStatus}</span>
+                        )}
+                        <audio controls src={audioURL} className="mt-2 w-full max-w-xs" />
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">Click to start recording</span>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <Upload className="h-10 w-10 text-gray-500" />
-                    <p className="text-sm text-gray-600">
-                      Drag and drop an audio file here, or click to select a file
-                    </p>
-                  </>
-                )}
-                <input 
-                  type="file" 
-                  id="audio-upload"
-                  accept="audio/wav,audio/*" 
-                  onChange={handleFileChange} 
-                  className="hidden"
-                />
-              </label>
+                </div>
+              </div>
             </div>
           </div>
           
-          {/* Record Section */}
-          <div className="flex-1">
-            <div className="border rounded-md p-4 flex flex-col items-center justify-center gap-2">
-              <div className="text-center mb-2">
-                <p className="font-medium">Or record audio directly</p>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                {isRecording ? (
-                  <button
-                    type="button"
-                    onClick={stopRecording}
-                    className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <Square className="h-6 w-6" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={startRecording}
-                    className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors"
-                  >
-                    <Mic className="h-6 w-6" />
-                  </button>
-                )}
-                
-                <div className="text-center">
-                  {isRecording ? (
-                    <div className="flex flex-col items-center">
-                      <div className="text-red-500 font-bold animate-pulse">Recording...</div>
-                      <div>{formatTime(recordingDuration)}</div>
-                    </div>
-                  ) : audioURL ? (
-                    <div className="flex flex-col items-center">
-                      <span className="text-green-500 flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" /> Recording saved
-                      </span>
-                      {conversionStatus && (
-                        <span className="text-blue-500 text-sm">{conversionStatus}</span>
-                      )}
-                      <audio controls src={audioURL} className="mt-2 w-full max-w-xs" />
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">Click to start recording</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <form onSubmit={handleSubmit}>
+            <button 
+              type="submit" 
+              disabled={!file || loading || isConverting}
+              className="w-full bg-blue-500 text-white px-4 py-3 rounded-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin"/>
+                  Processing...
+                </>
+              ) : isConverting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin"/>
+                  {conversionStatus}
+                </>
+              ) : (
+                <>
+                  <Music className="h-4 w-4" />
+                  Detect Song
+                </>
+              )}
+            </button>
+          </form>
         </div>
         
-        <form onSubmit={handleSubmit}>
-          <button 
-            type="submit" 
-            disabled={!file || loading || isConverting}
-            className="w-full bg-blue-500 text-white px-4 py-3 rounded-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin"/>
-                Processing...
-              </>
-            ) : isConverting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin"/>
-                {conversionStatus}
-              </>
-            ) : (
-              <>
-                <Music className="h-4 w-4" />
-                Detect Song
-              </>
-            )}
-          </button>
-        </form>
-      </div>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error! </strong>
-          <span className="block sm:inline">{error}</span>
-          <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
-            <XCircle className="h-6 w-6"/>
-          </span>
-        </div>
-      )}
-      
-      {success && result && result.result && (
-        <div className="bg-gray-100 p-6 border rounded-md shadow-md">
-          <div className="flex items-center space-x-2 mb-4">
-            <CheckCircle className="h-6 w-6 text-green-500" />
-            <h2 className="text-xl font-semibold text-green-500">Song Detected!</h2>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong className="font-bold">Error! </strong>
+            <span className="block sm:inline">{error}</span>
+            <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
+              <XCircle className="h-6 w-6"/>
+            </span>
           </div>
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="md:w-1/3">
-              {result.result.images?.coverarthq && (
-                <img 
-                  src={result.result.images.coverarthq} 
-                  alt={result.result.title || "Song cover"} 
-                  className="w-full h-auto rounded-lg shadow-lg"
+        )}
+        
+        {success && result && result.result && (
+          <div className="bg-gray-100 p-6 border rounded-md shadow-md">
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="h-6 w-6 text-green-500" />
+              <h2 className="text-xl font-semibold text-green-500">Song Detected!</h2>
+            </div>
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="md:w-1/3">
+                {result.result.images?.coverarthq && (
+                  <img 
+                    src={result.result.images.coverarthq} 
+                    alt={result.result.title || "Song cover"} 
+                    className="w-full h-auto rounded-lg shadow-lg"
+                  />
+                )}
+              </div>
+              <div className="md:w-2/3 space-y-4">
+                <h2 className="text-2xl font-bold text-black">{result.result.title || "Unknown Title"}</h2>
+                <p className="text-lg text-gray-600">{result.result.subtitle || "Unknown Artist"}</p>
+                
+                {/* Add SongLinks component here */}
+
+                
+                {result.result.metadata && result.result.metadata.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {result.result.metadata.map((meta: any, index: number) => (
+                      <div key={index} className="bg-white p-3 text-black rounded-md shadow">
+                        <h3 className="font-semibold text-sm">{meta.title}</h3>
+                        <p className="text-sm">{meta.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {result.result.providers && result.result.providers.length > 0 && (
+                  <div className="flex flex-wrap gap-4">
+                    {result.result.providers.map((provider: any, index: number) => (
+                      <a 
+                        key={index} 
+                        href={provider.uri} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="bg-black text-white px-4 py-2 rounded-md flex items-center hover:bg-gray-800 transition-colors"
+                      >
+                        {provider.caption}
+                      </a>
+                    ))}
+                  <SongLinks 
+                  songName={result.result.title || ""}
+                  artistName={result.result.subtitle || ""}
                 />
-              )}
-            </div>
-            <div className="md:w-2/3 space-y-4">
-              <h2 className="text-2xl font-bold text-black">{result.result.title || "Unknown Title"}</h2>
-              <p className="text-lg text-gray-600">{result.result.subtitle || "Unknown Artist"}</p>
-              
-              {result.result.metadata && result.result.metadata.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {result.result.metadata.map((meta: any, index: number) => (
-                    <div key={index} className="bg-white p-3 text-black rounded-md shadow">
-                      <h3 className="font-semibold text-sm">{meta.title}</h3>
-                      <p className="text-sm">{meta.text}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {result.result.providers && result.result.providers.length > 0 && (
-                <div className="flex flex-wrap gap-4">
-                  {result.result.providers.map((provider: any, index: number) => (
-                    <a 
-                      key={index} 
-                      href={provider.uri} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="bg-black text-white px-4 py-2 rounded-md flex items-center hover:bg-gray-800 transition-colors"
-                    >
-                      {provider.caption}
-                    </a>
-                  ))}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
